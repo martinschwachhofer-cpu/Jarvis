@@ -127,18 +127,42 @@
   }
 
   let resumeListeningAfterSpeech = false;
+
+  // Split into clause-sized chunks and queue them as separate utterances.
+  // A single long utterance is where most engines glitch/stutter; short,
+  // natural phrase boundaries produce a smoother, more composed delivery.
+  function splitIntoPhrases(text) {
+    return text
+      .split(/(?<=[.!?…])\s+|(?<=[,;:—])\s+(?=\S{12,})/)
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
   function speak(text) {
     if (!("speechSynthesis" in window)) { finishSpeaking(); return; }
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "de-DE";
-    if (deVoice) u.voice = deVoice;
-    u.rate = 1.12;
-    u.pitch = 0.72; // deep, composed, "butler" register — closer to the film's Jarvis
-    u.onstart = () => { setMode("speaking"); setStatus("JARVIS SPRICHT …", true); animateSpeakLevel(u); };
-    u.onend = finishSpeaking;
-    u.onerror = finishSpeaking;
-    speechSynthesis.speak(u);
+    const phrases = splitIntoPhrases(text);
+    if (!phrases.length) { finishSpeaking(); return; }
+
+    let started = false;
+    phrases.forEach((phrase, i) => {
+      const u = new SpeechSynthesisUtterance(phrase);
+      u.lang = "de-DE";
+      if (deVoice) u.voice = deVoice;
+      u.rate = 1.0;
+      u.pitch = 0.92; // gently lowered, natural register — avoids synthesis artifacts from extreme pitch shifts
+      u.volume = 1;
+      if (i === 0) {
+        u.onstart = () => { started = true; setMode("speaking"); setStatus("JARVIS SPRICHT …", true); animateSpeakLevel(u); };
+      } else {
+        u.onstart = () => { animateSpeakLevel(u); };
+      }
+      if (i === phrases.length - 1) {
+        u.onend = finishSpeaking;
+        u.onerror = finishSpeaking;
+      }
+      speechSynthesis.speak(u);
+    });
   }
   function finishSpeaking() {
     stopSpeakLevel();

@@ -157,7 +157,7 @@ main {
 .core {
   width: 148px; height: 148px; border-radius: 50%;
   background: radial-gradient(circle, #ffffff 0%, var(--orb-color) 33%, var(--orb-dim) 68%, #05141a 100%);
-  box-shadow: 0 0 42px var(--orb-color), 0 0 90px -10px var(--orb-dim), inset 0 0 30px rgba(255,255,255,0.4);
+  box-shadow: 0 0 28px -2px var(--orb-color), 0 0 60px -18px var(--orb-dim), inset 0 0 26px rgba(255,255,255,0.35);
   animation: pulse 3.2s ease-in-out infinite;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.5s ease, box-shadow 0.5s ease;
@@ -180,7 +180,7 @@ main {
 @keyframes pulseFast { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 
 .status-line { text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-dim); min-height: 16px; transition: color 0.4s; }
-.status-line.active { color: var(--orb-color); text-shadow: 0 0 10px var(--orb-color); }
+.status-line.active { color: var(--orb-color); }
 
 .mic-btn {
   padding: 12px 30px; font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase;
@@ -247,8 +247,8 @@ main {
 .kpi-top .num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-mid); }
 .bar { height: 4px; background: rgba(148,178,214,0.1); border-radius: 2px; overflow: hidden; }
 .fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
-.fill-primary { background: linear-gradient(90deg, var(--emerald-dim), var(--emerald)); box-shadow: 0 0 8px var(--emerald); }
-.fill-neutral { background: linear-gradient(90deg, var(--signal-dim), var(--signal)); box-shadow: 0 0 8px var(--signal); }
+.fill-primary { background: linear-gradient(90deg, var(--emerald-dim), var(--emerald)); }
+.fill-neutral { background: linear-gradient(90deg, var(--signal-dim), var(--signal)); }
 
 /* --------------------------------------------------------------- footer */
 footer { display: flex; gap: 10px; align-items: center; padding: 16px 30px; border-top: 1px solid var(--border); background: var(--bg-1); }
