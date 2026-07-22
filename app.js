@@ -54,19 +54,31 @@
   // Text-to-Speech: tiefe, männliche deutsche Stimme, ~1.15x Tempo
   // ---------------------------------------------------------------------
   let deVoice = null;
-  const PREFERRED_VOICE_NAMES = [
-    "google deutsch", "microsoft markus", "markus", "microsoft stefan", "stefan",
-    "anna", "yannick", "german male"
+  // Known male German voices across common platforms/browsers, ranked by
+  // preference — deepest/most "authoritative butler" character first.
+  const PREFERRED_MALE_VOICES = [
+    "markus", "conrad", "klaus", "stefan", "yannick", "german male", "male"
   ];
+  const KNOWN_FEMALE_VOICES = /female|frau|anna|petra|hedda|katja|helena|google deutsch/i;
+  // British-English male voices as a last resort — closer to the film's
+  // actual accent than a German voice that only offers a female option.
+  const PREFERRED_BRITISH_MALE = ["daniel", "arthur", "ryan", "george", "oliver"];
   function pickVoice() {
-    const voices = speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith("de"));
-    if (!voices.length) { deVoice = speechSynthesis.getVoices()[0] || null; return; }
-    let best = voices.find(v => PREFERRED_VOICE_NAMES.some(n => v.name.toLowerCase().includes(n)));
-    // Prefer names that don't obviously sound female if no explicit male match found
+    const all = speechSynthesis.getVoices();
+    const german = all.filter(v => v.lang && v.lang.toLowerCase().startsWith("de"));
+
+    // 1) Known male German voice name.
+    let best = german.find(v => PREFERRED_MALE_VOICES.some(n => v.name.toLowerCase().includes(n)));
+    // 2) Any German voice that isn't a known female voice.
+    if (!best) best = german.find(v => !KNOWN_FEMALE_VOICES.test(v.name));
+    // 3) No usable German male voice — try a British-English male voice.
     if (!best) {
-      best = voices.find(v => !/female|frau|petra|hedda|katja/i.test(v.name)) || voices[0];
+      const british = all.filter(v => v.lang && /^en-gb/i.test(v.lang));
+      best = british.find(v => PREFERRED_BRITISH_MALE.some(n => v.name.toLowerCase().includes(n)))
+        || british.find(v => !KNOWN_FEMALE_VOICES.test(v.name));
     }
-    deVoice = best || voices[0];
+    // 4) Absolute fallback: first German voice, else first voice available.
+    deVoice = best || german[0] || all[0] || null;
   }
   if ("speechSynthesis" in window) {
     pickVoice();
@@ -98,10 +110,10 @@
     if (!("speechSynthesis" in window)) { finishSpeaking(); return; }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "de-DE";
+    u.lang = deVoice ? deVoice.lang : "de-DE";
     if (deVoice) u.voice = deVoice;
-    u.rate = 1.15;
-    u.pitch = 0.85; // slightly lower for a deeper, more authoritative tone
+    u.rate = 1.12;
+    u.pitch = 0.72; // deep, composed, "butler" register — closer to the film's Jarvis
     u.onstart = () => { setMode("speaking"); setStatus("JARVIS SPRICHT …", true); animateSpeakLevel(u); };
     u.onend = finishSpeaking;
     u.onerror = finishSpeaking;
