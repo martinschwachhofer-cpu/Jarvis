@@ -89,25 +89,17 @@
     "markus", "conrad", "klaus", "stefan", "yannick", "german male", "male"
   ];
   const KNOWN_FEMALE_VOICES = /female|frau|anna|petra|hedda|katja|helena|google deutsch/i;
-  // British-English male voices as a last resort — closer to the film's
-  // actual accent than a German voice that only offers a female option.
-  const PREFERRED_BRITISH_MALE = ["daniel", "arthur", "ryan", "george", "oliver"];
   function pickVoice() {
-    const all = speechSynthesis.getVoices();
-    const german = all.filter(v => v.lang && v.lang.toLowerCase().startsWith("de"));
+    // German only — never fall back to an English voice, even if no male
+    // German voice is installed, so Jarvis always speaks German.
+    const german = speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith("de"));
 
     // 1) Known male German voice name.
     let best = german.find(v => PREFERRED_MALE_VOICES.some(n => v.name.toLowerCase().includes(n)));
     // 2) Any German voice that isn't a known female voice.
     if (!best) best = german.find(v => !KNOWN_FEMALE_VOICES.test(v.name));
-    // 3) No usable German male voice — try a British-English male voice.
-    if (!best) {
-      const british = all.filter(v => v.lang && /^en-gb/i.test(v.lang));
-      best = british.find(v => PREFERRED_BRITISH_MALE.some(n => v.name.toLowerCase().includes(n)))
-        || british.find(v => !KNOWN_FEMALE_VOICES.test(v.name));
-    }
-    // 4) Absolute fallback: first German voice, else first voice available.
-    deVoice = best || german[0] || all[0] || null;
+    // 3) Absolute fallback: first available German voice.
+    deVoice = best || german[0] || null;
   }
   if ("speechSynthesis" in window) {
     pickVoice();
@@ -139,7 +131,7 @@
     if (!("speechSynthesis" in window)) { finishSpeaking(); return; }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = deVoice ? deVoice.lang : "de-DE";
+    u.lang = "de-DE";
     if (deVoice) u.voice = deVoice;
     u.rate = 1.12;
     u.pitch = 0.72; // deep, composed, "butler" register — closer to the film's Jarvis
