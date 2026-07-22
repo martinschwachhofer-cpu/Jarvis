@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>J.A.R.V.I.S.</title>
+<style>
+  :root {
+    --cyan: #38e1ff;
+    --cyan-dim: #1a7f96;
+    --gold: #ffcf6b;
+    --bg: #04070d;
+    --danger: #ff5a5a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: radial-gradient(circle at 50% 45%, #0a1420 0%, #04070d 60%, #01030699 100%);
+    color: var(--cyan);
+    font-family: "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    user-select: none;
+    letter-spacing: 0.5px;
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(56,225,255,0.03) 0px, rgba(56,225,255,0.03) 1px, transparent 2px, transparent 4px);
+    pointer-events: none; z-index: 100;
+  }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 34px;
+    border-bottom: 1px solid rgba(56,225,255,0.15);
+    text-transform: uppercase; font-size: 12px; color: var(--cyan-dim);
+  }
+  header .logo { font-size: 22px; letter-spacing: 8px; color: var(--cyan); font-weight: 300; text-shadow: 0 0 18px rgba(56,225,255,0.6); }
+  header .clock { font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+  main {
+    flex: 1; display: grid; grid-template-columns: 1fr 1.3fr 1fr;
+    align-items: center; gap: 20px; padding: 10px 34px; min-height: 0;
+  }
+  .panel {
+    border: 1px solid rgba(56,225,255,0.18); border-radius: 8px;
+    background: linear-gradient(160deg, rgba(56,225,255,0.05), rgba(56,225,255,0.01));
+    padding: 16px 18px; height: 100%; display: flex; flex-direction: column;
+    backdrop-filter: blur(2px); overflow: hidden;
+  }
+  .panel h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
+    color: var(--cyan-dim); margin-bottom: 14px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel h2::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; height: 100%; }
+  .reactor { position: relative; width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .ring { position: absolute; border-radius: 50%; border: 1px solid rgba(56,225,255,0.35); inset: 0; }
+  .ring.r2 { inset: 26px; border-style: dashed; border-color: rgba(56,225,255,0.25); animation: spin 22s linear infinite; }
+  .ring.r3 { inset: 52px; border-color: rgba(56,225,255,0.5); }
+  .ring.r4 { inset: 78px; border-style: dashed; animation: spin 14s linear infinite reverse; border-color: rgba(255,207,107,0.35); }
+  .core {
+    width: 130px; height: 130px; border-radius: 50%;
+    background: radial-gradient(circle, #d8fbff 0%, var(--cyan) 35%, var(--cyan-dim) 70%, #05141a 100%);
+    box-shadow: 0 0 40px rgba(56,225,255,0.8), 0 0 90px rgba(56,225,255,0.45), inset 0 0 30px rgba(255,255,255,0.5);
+    animation: pulse 3.2s ease-in-out infinite; display: flex; align-items: center; justify-content: center;
+  }
+  .reactor.listening .core { animation: pulseFast 0.8s ease-in-out infinite; background: radial-gradient(circle, #fff 0%, #7dfcff 30%, var(--cyan) 60%, #05141a 100%); }
+  .reactor.speaking .core { background: radial-gradient(circle, #fff6dc 0%, var(--gold) 35%, #a97b1f 70%, #1a1205 100%); box-shadow: 0 0 40px rgba(255,207,107,0.8), 0 0 90px rgba(255,207,107,0.4); }
+  .reactor.thinking .ring { border-color: rgba(255,207,107,0.5); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { transform: scale(1); opacity: 0.92; } 50% { transform: scale(1.06); opacity: 1; } }
+  @keyframes pulseFast { 0%,100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+  .status-line { text-align: center; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: var(--cyan-dim); min-height: 18px; }
+  .status-line.active { color: var(--cyan); text-shadow: 0 0 12px rgba(56,225,255,0.6); }
+  .mic-btn {
+    padding: 14px 34px; font-size: 14px; letter-spacing: 3px; text-transform: uppercase;
+    background: rgba(56,225,255,0.08); color: var(--cyan);
+    border: 1px solid var(--cyan); border-radius: 40px; cursor: pointer; transition: all 0.2s; font-family: inherit;
+  }
+  .mic-btn:hover { background: rgba(56,225,255,0.2); box-shadow: 0 0 24px rgba(56,225,255,0.5); }
+  .mic-btn.on { background: var(--danger); border-color: var(--danger); color: #fff; box-shadow: 0 0 24px rgba(255,90,90,0.6); }
+  .mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .goal-current { border: 1px solid rgba(255,207,107,0.3); border-radius: 6px; padding: 14px; background: rgba(255,207,107,0.05); margin-bottom: 14px; }
+  .goal-current .label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--gold); opacity: 0.7; }
+  .goal-current .text { font-size: 17px; color: var(--gold); margin-top: 6px; line-height: 1.3; text-shadow: 0 0 12px rgba(255,207,107,0.4); }
+  .goal-current .empty { color: var(--cyan-dim); font-size: 14px; font-style: italic; }
+  .steps { list-style: none; flex: 1; overflow-y: auto; font-size: 13px; }
+  .steps li { padding: 8px 0 8px 22px; position: relative; color: rgba(56,225,255,0.8); border-bottom: 1px solid rgba(56,225,255,0.08); line-height: 1.35; animation: fadeIn 0.4s ease both; }
+  .steps li::before { content: "▸"; position: absolute; left: 4px; color: var(--gold); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+  .log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 13px; padding-right: 4px; }
+  .msg { line-height: 1.4; }
+  .msg .who { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.6; }
+  .msg.user .who { color: var(--gold); }
+  .msg.user .body { color: #e8f6ff; }
+  .msg.jarvis .who { color: var(--cyan); }
+  .msg.jarvis .body { color: var(--cyan); }
+  .metrics { display: flex; flex-direction: column; gap: 14px; margin-top: auto; }
+  .metric .top { display: flex; justify-content: space-between; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--cyan-dim); margin-bottom: 5px; }
+  .metric .bar { height: 5px; background: rgba(56,225,255,0.12); border-radius: 3px; overflow: hidden; }
+  .metric .fill { height: 100%; background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); box-shadow: 0 0 10px var(--cyan); border-radius: 3px; transition: width 1s; }
+  footer { display: flex; gap: 10px; align-items: center; padding: 14px 34px; border-top: 1px solid rgba(56,225,255,0.15); }
+  footer input {
+    flex: 1; background: rgba(56,225,255,0.06); border: 1px solid rgba(56,225,255,0.25);
+    color: #e8f6ff; padding: 12px 18px; border-radius: 30px; font-size: 14px; font-family: inherit; outline: none;
+  }
+  footer input:focus { border-color: var(--cyan); box-shadow: 0 0 18px rgba(56,225,255,0.3); }
+  footer input::placeholder { color: var(--cyan-dim); }
+  footer button {
+    background: var(--cyan); color: #04070d; border: none; padding: 12px 26px; border-radius: 30px;
+    font-size: 13px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; font-family: inherit; font-weight: 600;
+  }
+  footer button:hover { box-shadow: 0 0 20px rgba(56,225,255,0.6); }
+  .steps::-webkit-scrollbar, .log::-webkit-scrollbar { width: 4px; }
+  .steps::-webkit-scrollbar-thumb, .log::-webkit-scrollbar-thumb { background: rgba(56,225,255,0.3); border-radius: 2px; }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; grid-template-rows: auto auto auto; overflow-y: auto; }
+    .panel { height: auto; }
+    .reactor { width: 220px; height: 220px; }
+    .core { width: 100px; height: 100px; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">J · A · R · V · I · S</div>
+    <div class="sub">Just A Rather Very Intelligent System</div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Dialog</h2>
+      <div class="log" id="log"></div>
+    </section>
+
+    <div class="stage">
+      <div class="reactor" id="reactor" title="Klicken zum Sprechen">
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="ring r3"></div>
+        <div class="ring r4"></div>
+        <div class="core"></div>
+      </div>
+      <div class="status-line" id="status">System bereit</div>
+      <button class="mic-btn" id="micBtn">🎙 Sprechen</button>
+    </div>
+
+    <section class="panel">
+      <h2>Aktuelle Mission</h2>
+      <div class="goal-current">
+        <div class="label">Ziel</div>
+        <div class="text empty" id="goalText">Noch kein Ziel definiert</div>
+      </div>
+      <ul class="steps" id="steps"></ul>
+      <div class="metrics">
+        <div class="metric"><div class="top"><span>Systemlast</span><span id="v1">14%</span></div><div class="bar"><div class="fill" id="f1" style="width:14%"></div></div></div>
+        <div class="metric"><div class="top"><span>Fortschritt</span><span id="v2">0%</span></div><div class="bar"><div class="fill" id="f2" style="width:0%"></div></div></div>
+        <div class="metric"><div class="top"><span>Verbindung</span><span id="v3">98%</span></div><div class="bar"><div class="fill" id="f3" style="width:98%"></div></div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <input id="textInput" placeholder="Sag Jarvis dein Ziel … z.B. „Verdiene 500 Euro für uns"" autocomplete="off" />
+    <button id="sendBtn">Senden</button>
+  </footer>
+
+<script>
+(function () {
+  "use strict";
+  const reactor = document.getElementById("reactor");
+  const statusEl = document.getElementById("status");
+  const logEl = document.getElementById("log");
+  const stepsEl = document.getElementById("steps");
+  const goalText = document.getElementById("goalText");
+  const micBtn = document.getElementById("micBtn");
+  const textInput = document.getElementById("textInput");
+  const sendBtn = document.getElementById("sendBtn");
+
+  function tick() { document.getElementById("clock").textContent = new Date().toLocaleTimeString("de-DE"); }
+  setInterval(tick, 1000); tick();
+
+  setInterval(() => {
+    const load = 10 + Math.round(Math.random() * 25);
+    document.getElementById("v1").textContent = load + "%";
+    document.getElementById("f1").style.width = load + "%";
+    const conn = 92 + Math.round(Math.random() * 8);
+    document.getElementById("v3").textContent = conn + "%";
+    document.getElementById("f3").style.width = conn + "%";
+  }, 2500);
+
+  function setStatus(text, active) { statusEl.textContent = text; statusEl.classList.toggle("active", !!active); }
+  function mode(m) { reactor.classList.remove("listening", "speaking", "thinking"); if (m) reactor.classList.add(m); }
+
+  function addMsg(who, text) {
+    const wrap = document.createElement("div");
+    wrap.className = "msg " + who;
+    wrap.innerHTML = '<div class="who">' + (who === "user" ? "Sie" : "Jarvis") + '</div><div class="body"></div>';
+    wrap.querySelector(".body").textContent = text;
+    logEl.appendChild(wrap);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  let deVoice = null;
+  function pickVoice() {
+    const voices = speechSynthesis.getVoices();
+    deVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("de")) || voices[0] || null;
+  }
+  if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  function speak(text) {
+    if (!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "de-DE";
+    if (deVoice) u.voice = deVoice;
+    u.rate = 1.02; u.pitch = 0.9;
+    u.onstart = () => { mode("speaking"); setStatus("Jarvis spricht", true); };
+    u.onend = () => { if (!listening) { mode(""); setStatus("System bereit"); } };
+    speechSynthesis.speak(u);
+  }
+
+  function parseAmount(t) {
+    const m = t.match(/(\d[\d.\s]*)\s*(euro|eur|€|dollar|usd|\$)/i);
+    if (!m) return null;
+    const num = parseInt(m[1].replace(/[.\s]/g, ""), 10);
+    if (isNaN(num)) return null;
+    const cur = /dollar|usd|\$/i.test(m[2]) ? "$" : "€";
+    return { num, cur };
+  }
+  function planForMoney(amount) {
+    return [
+      "Marktanalyse: schnell umsetzbare Verdienstmöglichkeiten scannen",
+      "Fähigkeiten & Ressourcen bewerten (Skills, Zeit, Kapital)",
+      "Top-3 Strategien priorisieren nach Aufwand und Ertrag",
+      "Erste Strategie in konkrete Aufgaben zerlegen",
+      "Ausführung starten und Ergebnisse in Echtzeit überwachen",
+      "Ziel " + amount.num + " " + amount.cur + " tracken, bis es erreicht ist"
+    ];
+  }
+  const genericPlan = [
+    "Anfrage analysieren und Absicht verstehen",
+    "Notwendige Ressourcen und Schritte identifizieren",
+    "Ausführungsplan erstellen",
+    "Schrittweise abarbeiten und berichten"
+  ];
+  function setSteps(steps) {
+    stepsEl.innerHTML = "";
+    steps.forEach((s, i) => {
+      const li = document.createElement("li");
+      li.textContent = s;
+      li.style.animationDelay = (i * 0.08) + "s";
+      stepsEl.appendChild(li);
+    });
+  }
+  let progress = 0, progressTimer = null;
+  function startProgress() {
+    progress = 0;
+    clearInterval(progressTimer);
+    progressTimer = setInterval(() => {
+      if (progress >= 100) { clearInterval(progressTimer); return; }
+      progress = Math.min(100, progress + Math.random() * 6);
+      const p = Math.round(progress);
+      document.getElementById("v2").textContent = p + "%";
+      document.getElementById("f2").style.width = p + "%";
+    }, 1400);
+  }
+
+  function respond(input) {
+    const t = (input || "").trim();
+    if (!t) return;
+    addMsg("user", t);
+    mode("thinking");
+    setStatus("Verarbeite …", true);
+    setTimeout(() => {
+      const amount = parseAmount(t);
+      const isGoal = amount || /\b(ziel|verdien|beschaff|erreich|besorg|plan|baue|erstelle|organisier)/i.test(t);
+      let reply;
+      if (amount) {
+        goalText.textContent = amount.num + " " + amount.cur + " verdienen";
+        goalText.classList.remove("empty");
+        const steps = planForMoney(amount);
+        setSteps(steps);
+        startProgress();
+        reply = "Verstanden. Mission akzeptiert: " + amount.num + " " + amount.cur +
+          " zu verdienen. Ich habe einen Plan mit " + steps.length +
+          " Schritten erstellt und beginne mit der Marktanalyse. Ich halte Sie auf dem Laufenden.";
+      } else if (isGoal) {
+        goalText.textContent = t;
+        goalText.classList.remove("empty");
+        setSteps(genericPlan);
+        startProgress();
+        reply = "Ziel erfasst. Ich habe einen Ausführungsplan angelegt und beginne mit der Umsetzung.";
+      } else if (/\b(hallo|hi|hey|guten|jarvis)\b/i.test(t) && t.split(" ").length <= 4) {
+        reply = "Guten Tag. Ich bin Jarvis, zu Ihren Diensten. Nennen Sie mir Ihr Ziel.";
+      } else if (/danke/i.test(t)) {
+        reply = "Immer gern. Wozu bin ich sonst da.";
+      } else {
+        reply = "Notiert. Nennen Sie mir ein konkretes Ziel, dann erstelle ich einen Plan — zum Beispiel: Verdiene 500 Euro für uns.";
+      }
+      addMsg("jarvis", reply);
+      speak(reply);
+      if (!reactor.classList.contains("speaking")) { mode(""); setStatus("System bereit"); }
+    }, 700);
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recog = null, listening = false;
+  if (SR) {
+    recog = new SR();
+    recog.lang = "de-DE";
+    recog.interimResults = false;
+    recog.continuous = false;
+    recog.onstart = () => { listening = true; micBtn.classList.add("on"); micBtn.textContent = "⏹ Stop"; mode("listening"); setStatus("Höre zu …", true); };
+    recog.onerror = (e) => { setStatus("Mikrofon-Fehler: " + e.error); };
+    recog.onend = () => { listening = false; micBtn.classList.remove("on"); micBtn.textContent = "🎙 Sprechen"; if (!reactor.classList.contains("speaking")) { mode(""); setStatus("System bereit"); } };
+    recog.onresult = (e) => { respond(e.results[0][0].transcript); };
+  } else {
+    micBtn.disabled = true;
+    micBtn.textContent = "Kein Mikrofon-Support";
+    micBtn.title = "Spracherkennung wird in diesem Browser nicht unterstützt. Nutze Chrome oder Edge.";
+  }
+  function toggleMic() {
+    if (!recog) return;
+    if (listening) { recog.stop(); }
+    else { speechSynthesis.cancel(); try { recog.start(); } catch (e) {} }
+  }
+
+  reactor.addEventListener("click", toggleMic);
+  micBtn.addEventListener("click", toggleMic);
+  sendBtn.addEventListener("click", () => { respond(textInput.value); textInput.value = ""; });
+  textInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { respond(textInput.value); textInput.value = ""; } });
+
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      const hello = "Systeme online. Jarvis ist einsatzbereit. Nennen Sie mir Ihr Ziel.";
+      addMsg("jarvis", hello);
+      speak(hello);
+    }, 900);
+  });
+})();
+</script>
+</body>
+</html>
