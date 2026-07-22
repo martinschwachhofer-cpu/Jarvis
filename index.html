@@ -3,19 +3,31 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>J.A.R.V.I.S.</title>
+<title>J.A.R.V.I.S. — Wealth Operations</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <div class="logo">J · A · R · V · I · S</div>
-    <div class="sub">Just A Rather Very Intelligent System</div>
-    <div class="clock" id="clock">--:--:--</div>
+    <div class="brand">
+      <span class="mark">J</span>
+      <div class="wordmark">
+        <div class="logo">JARVIS</div>
+        <div class="sub">Autonomous Wealth Operations</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="session-id">SESSION <span id="sessionId">JV-0000</span></div>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
   </header>
 
+  <div class="ticker" id="ticker" aria-hidden="true">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
+
   <main>
-    <section class="panel">
-      <h2>Dialog</h2>
+    <section class="panel log-panel">
+      <h2>Kommunikationsprotokoll</h2>
       <div class="log" id="log"></div>
     </section>
 
@@ -32,23 +44,39 @@
       <div class="mic-error" id="micError"></div>
     </div>
 
-    <section class="panel">
-      <h2>Aktuelle Mission</h2>
-      <div class="goal-current">
-        <div class="label">Ziel</div>
+    <section class="panel mission-panel">
+      <h2>Mandat</h2>
+      <div class="goal-card">
+        <div class="goal-card-top">
+          <span class="label">Zielkapital</span>
+          <span class="chip" id="goalChip">Kein Mandat</span>
+        </div>
         <div class="text empty" id="goalText">Noch kein Ziel definiert</div>
+        <div class="goal-sub" id="goalSub"></div>
       </div>
-      <ul class="steps" id="steps"></ul>
-      <div class="metrics">
-        <div class="metric"><div class="top"><span>Systemlast</span><span id="v1">14%</span></div><div class="bar"><div class="fill" id="f1" style="width:14%"></div></div></div>
-        <div class="metric"><div class="top"><span>Fortschritt</span><span id="v2">0%</span></div><div class="bar"><div class="fill" id="f2" style="width:0%"></div></div></div>
-        <div class="metric"><div class="top"><span>Verbindung</span><span id="v3">98%</span></div><div class="bar"><div class="fill" id="f3" style="width:98%"></div></div></div>
+
+      <div class="section-label">Ausführungsplan</div>
+      <ol class="steps" id="steps"></ol>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-top"><span>Kapitalauslastung</span><span id="v1" class="num">14%</span></div>
+          <div class="bar"><div class="fill fill-neutral" id="f1" style="width:14%"></div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span>Zielerreichung</span><span id="v2" class="num">0%</span></div>
+          <div class="bar"><div class="fill fill-primary" id="f2" style="width:0%"></div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span>Systemintegrität</span><span id="v3" class="num">98%</span></div>
+          <div class="bar"><div class="fill fill-neutral" id="f3" style="width:98%"></div></div>
+        </div>
       </div>
     </section>
   </main>
 
   <footer>
-    <input id="textInput" placeholder="Sag Jarvis dein Ziel … z.B. „Verdiene 500 Euro für uns"" autocomplete="off" />
+    <input id="textInput" placeholder="Formulieren Sie Ihr Mandat … z. B. „Verdiene 500 Euro für uns"" autocomplete="off" />
     <button id="sendBtn">Senden</button>
   </footer>
 

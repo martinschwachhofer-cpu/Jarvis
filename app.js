@@ -6,16 +6,21 @@
   const logEl = document.getElementById("log");
   const stepsEl = document.getElementById("steps");
   const goalText = document.getElementById("goalText");
+  const goalChip = document.getElementById("goalChip");
+  const goalSub = document.getElementById("goalSub");
   const micBtn = document.getElementById("micBtn");
   const micError = document.getElementById("micError");
   const textInput = document.getElementById("textInput");
   const sendBtn = document.getElementById("sendBtn");
 
   // ---------------------------------------------------------------------
-  // Clock & ambient metrics
+  // Clock, session id & ambient KPIs
   // ---------------------------------------------------------------------
   function tick() { document.getElementById("clock").textContent = new Date().toLocaleTimeString("de-DE"); }
   setInterval(tick, 1000); tick();
+
+  document.getElementById("sessionId").textContent =
+    "JV-" + Math.floor(1000 + Math.random() * 9000);
 
   setInterval(() => {
     const load = 10 + Math.round(Math.random() * 25);
@@ -25,6 +30,30 @@
     document.getElementById("v3").textContent = conn + "%";
     document.getElementById("f3").style.width = conn + "%";
   }, 2500);
+
+  // ---------------------------------------------------------------------
+  // Market ticker strip — ambient financial texture, duplicated once for
+  // a seamless scroll loop
+  // ---------------------------------------------------------------------
+  const TICKER_SEED = [
+    { sym: "DAX", val: "18.942,10", delta: "+0,64%", up: true },
+    { sym: "MSCI WORLD", val: "3.412,88", delta: "+0,21%", up: true },
+    { sym: "EUR/USD", val: "1,0863", delta: "-0,08%", up: false },
+    { sym: "BTC", val: "58.204", delta: "+2,13%", up: true },
+    { sym: "GOLD", val: "2.331,40", delta: "+0,12%", up: true },
+    { sym: "10Y BUND", val: "2,41%", delta: "-0,03%", up: false },
+    { sym: "S&P 500", val: "5.487,03", delta: "+0,37%", up: true }
+  ];
+  function renderTicker() {
+    const track = document.getElementById("tickerTrack");
+    const html = TICKER_SEED.map(t =>
+      '<span class="ticker-item"><span class="sym">' + t.sym + '</span>' +
+      '<span class="val">' + t.val + '</span>' +
+      '<span class="delta ' + (t.up ? "up" : "down") + '">' + t.delta + '</span></span>'
+    ).join("");
+    track.innerHTML = html + html; // duplicate for seamless loop
+  }
+  renderTicker();
 
   // ---------------------------------------------------------------------
   // Orb state machine: standby | listening | thinking | speaking
@@ -185,24 +214,32 @@
     }, 1400);
   }
 
+  const eurFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+  function activateMandate(displayText, subText) {
+    goalText.textContent = displayText;
+    goalText.classList.remove("empty");
+    goalChip.textContent = "Aktives Mandat";
+    goalChip.classList.add("active");
+    goalSub.textContent = subText;
+  }
+
   function buildReply(t) {
     const amount = parseAmount(t);
     const isGoal = amount || /\b(ziel|verdien|beschaff|erreich|besorg|plan|baue|erstelle|organisier|erledige)/i.test(t);
     const A = address();
 
     if (amount) {
-      goalText.textContent = amount.num + " " + amount.cur + " verdienen";
-      goalText.classList.remove("empty");
+      const formatted = eurFmt.format(amount.num) + " " + amount.cur;
+      activateMandate(formatted, "Mandat erteilt um " + new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }));
       const steps = planForMoney(amount);
       setSteps(steps);
       startProgress();
-      return "Verstanden, " + A + ". Ich habe die Zielmarke von " + amount.num + " " + amount.cur +
+      return "Verstanden, " + A + ". Ich habe die Zielmarke von " + formatted +
         " erfasst und einen Plan mit " + steps.length + " Schritten entworfen. Mit Ihrer Erlaubnis beginne ich " +
         "unverzüglich mit der Marktanalyse — ich halte Sie selbstverständlich über jeden Fortschritt auf dem Laufenden.";
     }
     if (isGoal) {
-      goalText.textContent = t;
-      goalText.classList.remove("empty");
+      activateMandate(t, "Mandat erteilt um " + new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }));
       setSteps(genericPlan);
       startProgress();
       return "Sehr wohl, " + A + ". Ich habe einen Ausführungsplan angelegt und setze die Priorität entsprechend. " +
@@ -217,7 +254,7 @@
     if (/wie geht('| e)?s dir|wie geht es dir/i.test(t)) {
       return "Bestens, danke der Nachfrage, " + A + " — alle Systeme laufen innerhalb der Toleranzwerte. Und Ihnen?";
     }
-    return "Notiert, " + A + ". Nennen Sie mir ein konkretes Ziel — etwa: „Verdiene 500 Euro für uns" — und ich entwerfe umgehend einen Plan.";
+    return "Notiert, " + A + ". Nennen Sie mir ein konkretes Ziel — etwa: „Verdiene 500 Euro für uns“ — und ich entwerfe umgehend einen Plan.";
   }
 
   function respond(input) {
