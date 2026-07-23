@@ -33,7 +33,16 @@
 
     <div class="stage">
       <div class="reactor" id="reactor" title="Klicken zum Sprechen">
-        <canvas id="brainCanvas" aria-hidden="true"></canvas>
+        <div class="ring bezel" aria-hidden="true"></div>
+        <div class="ring arc arc-a" aria-hidden="true"></div>
+        <div class="ring arc arc-b" aria-hidden="true"></div>
+        <div class="ring track" aria-hidden="true"></div>
+        <div class="ring orbit orbit-1" aria-hidden="true"><span class="dot"></span></div>
+        <div class="ring orbit orbit-2" aria-hidden="true"><span class="dot"></span></div>
+        <div class="core"></div>
+        <div class="reticle" aria-hidden="true"></div>
+        <div class="readout readout-tl" id="readoutTL">SYNC <span id="readoutSync">98.4%</span></div>
+        <div class="readout readout-br" id="readoutBR">Θ <span id="readoutTheta">042°</span></div>
       </div>
       <div class="status-line" id="status">STANDBY</div>
       <button class="mic-btn" id="micBtn">🎙 Sprechen</button>

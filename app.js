@@ -65,197 +65,19 @@
   function setMode(m) {
     reactor.classList.remove("listening", "speaking", "thinking");
     if (m) reactor.classList.add(m);
-    if (window.JarvisBrain) window.JarvisBrain.setState(m || "standby");
   }
 
   // ---------------------------------------------------------------------
-  // Neural mesh visualization — a rotating pseudo-3D point cloud shaped
-  // like a brain, connected into a synapse mesh with traveling impulses.
-  // Pure canvas, no dependencies, respects prefers-reduced-motion.
+  // Telemetry readouts — small live-updating HUD numbers around the orb
   // ---------------------------------------------------------------------
-  (function initBrain() {
-    const canvas = document.getElementById("brainCanvas");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    const STATE_STYLE = {
-      standby:   { color: "#4fd6ff", dim: "#1c6c85", rot: 0.06, spawnMs: 700 },
-      listening: { color: "#2ee6a6", dim: "#12654b", rot: 0.10, spawnMs: 260 },
-      thinking:  { color: "#f0a63f", dim: "#8a5c17", rot: 0.30, spawnMs: 90 },
-      speaking:  { color: "#eafcff", dim: "#4fd6ff", rot: 0.16, spawnMs: 160 }
-    };
-    let state = "standby";
-    let micLevel = 0, speakLevel = 0;
-
-    const NODE_COUNT = 170;
-    let nodes = [], edges = [], pulses = [];
-    let angle = 0, lastSpawn = 0, lastTime = 0;
-    let W = 0, H = 0, R = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
-
-    // Uniform sphere sampling deformed into a two-hemisphere "brain" blob:
-    // organic fold-like ripples via layered sine harmonics, plus a groove
-    // pushed open along the x=0 plane to read as a longitudinal fissure.
-    function buildNodes() {
-      nodes = [];
-      for (let i = 0; i < NODE_COUNT; i++) {
-        const u = Math.random(), v = Math.random();
-        const theta = u * Math.PI * 2;
-        const phi = Math.acos(1 - 2 * v);
-        const fold = 1 + 0.11 * Math.sin(5 * theta + 2 * phi) + 0.07 * Math.sin(9 * phi) + 0.05 * Math.cos(7 * theta);
-        let x = Math.sin(phi) * Math.cos(theta) * fold;
-        let y = Math.cos(phi) * fold * 0.82;
-        let z = Math.sin(phi) * Math.sin(theta) * fold;
-
-        const gap = 0.16;
-        if (Math.abs(x) < gap) x += Math.sign(x || 1) * (gap - Math.abs(x)) * 1.6;
-
-        nodes.push({
-          x, y, z,
-          phase: Math.random() * Math.PI * 2,
-          freq: 0.6 + Math.random() * 0.9,
-          // projected each frame:
-          sx: 0, sy: 0, scale: 1, depth: 0
-        });
-      }
-    }
-
-    function buildEdges() {
-      edges = [];
-      const seen = new Set();
-      const K = 3;
-      for (let i = 0; i < nodes.length; i++) {
-        const dists = [];
-        for (let j = 0; j < nodes.length; j++) {
-          if (i === j) continue;
-          const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y, dz = nodes[i].z - nodes[j].z;
-          dists.push([j, dx * dx + dy * dy + dz * dz]);
-        }
-        dists.sort((a, b) => a[1] - b[1]);
-        for (let k = 0; k < K; k++) {
-          const j = dists[k][0];
-          const key = i < j ? i + "-" + j : j + "-" + i;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          edges.push([i, j]);
-        }
-      }
-    }
-
-    function resize() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      W = rect.width; H = rect.height;
-      canvas.width = W * DPR; canvas.height = H * DPR;
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      R = Math.min(W, H) * 0.34;
-    }
-
-    function spawnPulse(now) {
-      if (!edges.length) return;
-      const [a, b] = edges[Math.floor(Math.random() * edges.length)];
-      const reverse = Math.random() < 0.5;
-      pulses.push({ a: reverse ? b : a, b: reverse ? a : b, t: 0, speed: 1.1 + Math.random() * 1.1 });
-      if (pulses.length > 40) pulses.shift();
-    }
-
-    function project(n) {
-      const cos = Math.cos(angle), sin = Math.sin(angle);
-      const rx = n.x * cos + n.z * sin;
-      const rz = -n.x * sin + n.z * cos;
-      const wx = rx * R, wy = n.y * R, wz = rz * R;
-      const focal = R * 3.2;
-      const scale = focal / (focal + wz);
-      n.sx = W / 2 + wx * scale;
-      n.sy = H / 2 + wy * scale;
-      n.scale = scale;
-      n.depth = wz;
-    }
-
-    function frame(t) {
-      if (!lastTime) lastTime = t;
-      const dt = Math.min((t - lastTime) / 1000, 0.05);
-      lastTime = t;
-      const style = STATE_STYLE[state] || STATE_STYLE.standby;
-
-      angle += style.rot * dt * (0.6 + micLevel * 0.8 + speakLevel * 0.6);
-
-      // Trailing fade instead of a hard clear — reads as a living, glowing
-      // field rather than a flat redraw.
-      ctx.fillStyle = "rgba(5,7,11,0.32)";
-      ctx.fillRect(0, 0, W, H);
-
-      nodes.forEach(project);
-      const order = nodes.map((_, i) => i).sort((i, j) => nodes[i].depth - nodes[j].depth);
-
-      // Edges
-      ctx.lineWidth = 1;
-      edges.forEach(([i, j]) => {
-        const a = nodes[i], b = nodes[j];
-        const depthAvg = (a.depth + b.depth) / (2 * R);
-        const op = Math.max(0.04, Math.min(0.34, 0.2 + depthAvg * 0.22));
-        ctx.strokeStyle = hexToRgba(style.dim, op);
-        ctx.beginPath();
-        ctx.moveTo(a.sx, a.sy);
-        ctx.lineTo(b.sx, b.sy);
-        ctx.stroke();
-      });
-
-      // Nodes, back-to-front
-      order.forEach((idx) => {
-        const n = nodes[idx];
-        const flicker = 0.55 + 0.45 * Math.sin(t / 1000 * n.freq + n.phase);
-        const amp = state === "thinking" || state === "speaking" ? 1.3 : 1;
-        const rad = (1.4 + flicker * 1.6 * amp) * Math.max(0.4, n.scale);
-        const op = Math.max(0.25, Math.min(1, 0.4 + n.scale * 0.5 + flicker * 0.25));
-        ctx.beginPath();
-        ctx.fillStyle = hexToRgba(style.color, op);
-        ctx.arc(n.sx, n.sy, rad, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // Traveling impulses along synapses
-      const spawnInterval = style.spawnMs / (1 + micLevel * 2 + speakLevel * 1.5);
-      if (t - lastSpawn > spawnInterval) { lastSpawn = t; spawnPulse(t); }
-      pulses.forEach((p) => { p.t += dt * p.speed; });
-      pulses = pulses.filter((p) => p.t < 1);
-      pulses.forEach((p) => {
-        const a = nodes[p.a], b = nodes[p.b];
-        const x = a.sx + (b.sx - a.sx) * p.t;
-        const y = a.sy + (b.sy - a.sy) * p.t;
-        ctx.save();
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = style.color;
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.arc(x, y, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      });
-
-      if (!reduceMotion) requestAnimationFrame(frame);
-    }
-
-    function hexToRgba(hex, a) {
-      const v = hex.replace("#", "");
-      const r = parseInt(v.substring(0, 2), 16);
-      const g = parseInt(v.substring(2, 4), 16);
-      const b = parseInt(v.substring(4, 6), 16);
-      return "rgba(" + r + "," + g + "," + b + "," + a + ")";
-    }
-
-    buildNodes();
-    buildEdges();
-    resize();
-    window.addEventListener("resize", resize);
-    requestAnimationFrame(frame);
-    if (reduceMotion) frame(0); // draw a single static frame
-
-    window.JarvisBrain = {
-      setState(s) { state = STATE_STYLE[s] ? s : "standby"; },
-      setMicLevel(v) { micLevel = v; },
-      setSpeakLevel(v) { speakLevel = v; }
-    };
-  })();
+  const readoutSync = document.getElementById("readoutSync");
+  const readoutTheta = document.getElementById("readoutTheta");
+  let thetaDeg = 42;
+  setInterval(() => {
+    if (readoutSync) readoutSync.textContent = (97 + Math.random() * 2.8).toFixed(1) + "%";
+    thetaDeg = (thetaDeg + 4 + Math.round(Math.random() * 6)) % 360;
+    if (readoutTheta) readoutTheta.textContent = String(thetaDeg).padStart(3, "0") + "°";
+  }, 1800);
 
   // ---------------------------------------------------------------------
   // Conversation log
@@ -304,16 +126,16 @@
     clearInterval(speakLevelTimer);
     speakLevelTimer = setInterval(() => {
       level = Math.max(0, level * 0.6 + Math.random() * 0.4);
-      if (window.JarvisBrain) window.JarvisBrain.setSpeakLevel(level);
+      reactor.style.setProperty("--speak-level", level.toFixed(2));
     }, 90);
     utterance.onboundary = () => {
       level = 0.7 + Math.random() * 0.3;
-      if (window.JarvisBrain) window.JarvisBrain.setSpeakLevel(level);
+      reactor.style.setProperty("--speak-level", level.toFixed(2));
     };
   }
   function stopSpeakLevel() {
     clearInterval(speakLevelTimer);
-    if (window.JarvisBrain) window.JarvisBrain.setSpeakLevel(0);
+    reactor.style.setProperty("--speak-level", "0");
   }
 
   let resumeListeningAfterSpeech = false;
@@ -500,7 +322,7 @@
       const loop = () => {
         analyser.getByteFrequencyData(data);
         const avg = data.reduce((a, b) => a + b, 0) / data.length;
-        if (window.JarvisBrain) window.JarvisBrain.setMicLevel(Math.min(1, avg / 90));
+        reactor.style.setProperty("--mic-level", Math.min(1, avg / 90).toFixed(2));
         levelRAF = requestAnimationFrame(loop);
       };
       loop();
@@ -511,7 +333,7 @@
     levelRAF = null;
     if (audioCtx) { audioCtx.close().catch(() => {}); audioCtx = null; }
     if (micStream) { micStream.getTracks().forEach(tr => tr.stop()); micStream = null; }
-    if (window.JarvisBrain) window.JarvisBrain.setMicLevel(0);
+    reactor.style.setProperty("--mic-level", "0");
   }
 
   function initRecognition() {

@@ -129,27 +129,24 @@ main {
 
 /* --------------------------------------------------------------- stage */
 .stage {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
   height: 100%; background: var(--bg-0); padding: 16px; position: relative; overflow: hidden;
 }
 .reactor {
   position: relative;
-  width: min(72vh, 92%);
+  width: min(40vh, 400px);
   aspect-ratio: 1 / 1;
-  max-width: 620px;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.reactor canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-/* Faint radial field behind the neural mesh — gives it depth and a sense
-   of scale, like the brain is suspended in an instrument chamber. */
+/* Ambient field — gives the instrument a sense of depth and scale */
 .reactor::before {
   content: "";
-  position: absolute; inset: -8%;
+  position: absolute; inset: -14%;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--orb-dim) 0%, transparent 68%);
-  opacity: 0.18;
-  filter: blur(6px);
+  background: radial-gradient(circle, var(--orb-dim) 0%, transparent 66%);
+  opacity: 0.22;
+  filter: blur(10px);
   transition: background 0.6s ease;
   pointer-events: none;
 }
@@ -157,6 +154,99 @@ main {
 .reactor.listening { --orb-color: var(--emerald); --orb-dim: var(--emerald-dim); }
 .reactor.thinking { --orb-color: var(--amber); --orb-dim: var(--amber-dim); }
 .reactor.speaking { --orb-color: #eafcff; --orb-dim: var(--signal); }
+
+/* Precision bezel — fine chronometer-style tick marks */
+.ring { position: absolute; border-radius: 50%; transition: border-color 0.6s ease, background 0.6s ease; }
+.bezel {
+  inset: 0;
+  background: repeating-conic-gradient(var(--orb-dim) 0deg 1.1deg, transparent 1.1deg 6deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 0%, transparent 93%, #000 94%, #000 100%);
+          mask: radial-gradient(closest-side, transparent 0%, transparent 93%, #000 94%, #000 100%);
+  opacity: 0.55;
+  animation: spin 90s linear infinite;
+}
+
+/* Two independent HUD arcs, counter-rotating at different speeds —
+   the layered motion is what reads as "instrument", not a static ring. */
+.arc {
+  inset: 18px;
+  background: conic-gradient(from 0deg,
+    var(--orb-color) 0deg 22deg, transparent 22deg 96deg,
+    var(--orb-color) 96deg 118deg, transparent 118deg 210deg,
+    var(--orb-color) 210deg 232deg, transparent 232deg 360deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 0%, transparent 89%, #000 90%, #000 100%);
+          mask: radial-gradient(closest-side, transparent 0%, transparent 89%, #000 90%, #000 100%);
+  opacity: 0.55;
+  animation: spin 16s linear infinite;
+}
+.arc-b {
+  inset: 40px;
+  background: conic-gradient(from 40deg,
+    var(--gold) 0deg 14deg, transparent 14deg 150deg,
+    var(--gold) 150deg 166deg, transparent 166deg 360deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 0%, transparent 88%, #000 89%, #000 100%);
+          mask: radial-gradient(closest-side, transparent 0%, transparent 88%, #000 89%, #000 100%);
+  opacity: 0.4;
+  animation: spin 11s linear infinite reverse;
+}
+.track { inset: 62px; border: 1px solid var(--orb-dim); opacity: 0.5; }
+
+/* Orbiting satellites — small lights tracing the outer rings */
+.orbit { inset: 8px; animation: spin 7s linear infinite; }
+.orbit .dot {
+  position: absolute; top: -2px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px;
+  border-radius: 50%; background: var(--orb-color); box-shadow: 0 0 9px var(--orb-color), 0 0 2px #fff;
+}
+.orbit-2 { inset: 40px; animation: spin 5.5s linear infinite reverse; }
+.orbit-2 .dot { background: var(--gold); box-shadow: 0 0 8px var(--gold); width: 4px; height: 4px; margin-left: -2px; }
+
+.core {
+  position: relative;
+  width: 44%; height: 44%; border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, var(--orb-color) 33%, var(--orb-dim) 68%, #05141a 100%);
+  box-shadow: 0 0 30px -2px var(--orb-color), 0 0 64px -16px var(--orb-dim), inset 0 0 26px rgba(255,255,255,0.38);
+  animation: pulse 3.2s ease-in-out infinite;
+  transition: background 0.5s ease, box-shadow 0.5s ease;
+}
+.core::after {
+  content: "";
+  position: absolute; inset: 8%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,0.55) 18deg, transparent 40deg, transparent 360deg);
+  animation: spin 4s linear infinite;
+  mix-blend-mode: screen;
+}
+
+/* Faint crosshair — appears once Jarvis is actively engaged */
+.reticle { position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
+.reticle::before, .reticle::after {
+  content: ""; position: absolute; background: var(--orb-color);
+}
+.reticle::before { top: 50%; left: 6%; right: 6%; height: 1px; transform: translateY(-0.5px); }
+.reticle::after { left: 50%; top: 6%; bottom: 6%; width: 1px; transform: translateX(-0.5px); }
+.reactor.listening .reticle, .reactor.thinking .reticle, .reactor.speaking .reticle { opacity: 0.14; }
+
+/* Corner telemetry readouts */
+.readout {
+  position: absolute; font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+  color: var(--ink-dim); white-space: nowrap; pointer-events: none;
+}
+.readout span { color: var(--ink-mid); }
+.readout-tl { top: -2px; left: -2px; }
+.readout-br { bottom: -2px; right: -2px; }
+
+.reactor.listening .ring, .reactor.listening .orbit { animation-duration: calc(var(--dur, 7s) * 0.5); }
+.reactor.thinking .arc { animation-duration: 4s; }
+.reactor.thinking .arc-b { animation-duration: 3s; }
+.reactor.thinking .orbit { animation-duration: 2.4s; }
+.reactor.thinking .orbit-2 { animation-duration: 1.8s; }
+.reactor.thinking .core { animation: pulseFast 0.9s ease-in-out infinite; }
+.reactor.speaking .core { animation: none; transform: scale(calc(1 + var(--speak-level, 0) * 0.12)); transition: transform 0.06s ease-out; }
+.reactor.listening .core { animation: none; transform: scale(calc(1 + var(--mic-level, 0) * 0.1)); transition: transform 0.08s ease-out; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity: 0.94; } 50% { transform: scale(1.045); opacity: 1; } }
+@keyframes pulseFast { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
 .status-line { text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-dim); min-height: 16px; transition: color 0.4s; }
 .status-line.active { color: var(--orb-color); }
@@ -249,5 +339,10 @@ footer button:hover { box-shadow: 0 0 18px rgba(46,230,166,0.4); }
 @media (max-width: 960px) {
   main { grid-template-columns: 1fr; grid-template-rows: auto auto auto; overflow-y: auto; }
   .panel { height: auto; }
-  .reactor { width: min(70vw, 320px); }
+  .reactor { width: min(64vw, 260px); }
+  .readout { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring, .orbit, .core, .core::after { animation: none !important; }
 }
