@@ -129,55 +129,34 @@ main {
 
 /* --------------------------------------------------------------- stage */
 .stage {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-  height: 100%; background: var(--bg-0); padding: 22px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  height: 100%; background: var(--bg-0); padding: 16px; position: relative; overflow: hidden;
 }
-.reactor { position: relative; width: 320px; height: 320px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.reactor {
+  position: relative;
+  width: min(72vh, 92%);
+  aspect-ratio: 1 / 1;
+  max-width: 620px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.reactor canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-/* Instrument bezel — a precision tick ring, like a chronometer, replacing
-   the arcade dashed circles with something that reads as engineered. */
+/* Faint radial field behind the neural mesh — gives it depth and a sense
+   of scale, like the brain is suspended in an instrument chamber. */
 .reactor::before {
   content: "";
-  position: absolute; inset: 0; border-radius: 50%;
-  background: repeating-conic-gradient(
-    var(--orb-dim) 0deg 1.2deg,
-    transparent 1.2deg 6deg
-  );
-  -webkit-mask: radial-gradient(closest-side, transparent 0%, transparent 92%, #000 93%, #000 100%);
-          mask: radial-gradient(closest-side, transparent 0%, transparent 92%, #000 93%, #000 100%);
-  opacity: 0.55;
+  position: absolute; inset: -8%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--orb-dim) 0%, transparent 68%);
+  opacity: 0.18;
+  filter: blur(6px);
   transition: background 0.6s ease;
-}
-
-.ring { position: absolute; border-radius: 50%; border: 1px solid var(--orb-dim); opacity: 0.45; inset: 14px; transition: border-color 0.6s ease; }
-.ring.r2 { inset: 42px; border-style: solid; border-width: 1px; animation: spin 30s linear infinite; opacity: 0.3; }
-.ring.r3 { inset: 66px; opacity: 0.75; border-width: 1.5px; }
-.ring.r4 { inset: 96px; border-style: dashed; animation: spin 16s linear infinite reverse; border-color: var(--gold); opacity: 0.25; }
-
-.core {
-  width: 148px; height: 148px; border-radius: 50%;
-  background: radial-gradient(circle, #ffffff 0%, var(--orb-color) 33%, var(--orb-dim) 68%, #05141a 100%);
-  box-shadow: 0 0 28px -2px var(--orb-color), 0 0 60px -18px var(--orb-dim), inset 0 0 26px rgba(255,255,255,0.35);
-  animation: pulse 3.2s ease-in-out infinite;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.5s ease, box-shadow 0.5s ease;
+  pointer-events: none;
 }
 
 .reactor.listening { --orb-color: var(--emerald); --orb-dim: var(--emerald-dim); }
-.reactor.listening .core { animation: none; transform: scale(calc(1 + var(--mic-level, 0) * 0.18)); transition: transform 0.08s ease-out; }
-.reactor.listening .ring { animation-duration: 8s; }
-
 .reactor.thinking { --orb-color: var(--amber); --orb-dim: var(--amber-dim); }
-.reactor.thinking .core { animation: pulseFast 0.9s ease-in-out infinite; }
-.reactor.thinking .ring.r2 { animation-duration: 5s; }
-.reactor.thinking .ring.r4 { animation-duration: 3.5s; }
-
 .reactor.speaking { --orb-color: #eafcff; --orb-dim: var(--signal); }
-.reactor.speaking .core { animation: none; transform: scale(calc(1 + var(--speak-level, 0) * 0.2)); transition: transform 0.06s ease-out; }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 0%,100% { transform: scale(1); opacity: 0.92; } 50% { transform: scale(1.05); opacity: 1; } }
-@keyframes pulseFast { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 
 .status-line { text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-dim); min-height: 16px; transition: color 0.4s; }
 .status-line.active { color: var(--orb-color); }
@@ -270,10 +249,5 @@ footer button:hover { box-shadow: 0 0 18px rgba(46,230,166,0.4); }
 @media (max-width: 960px) {
   main { grid-template-columns: 1fr; grid-template-rows: auto auto auto; overflow-y: auto; }
   .panel { height: auto; }
-  .reactor { width: 180px; height: 180px; }
-  .core { width: 80px; height: 80px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ring, .core { animation: none !important; }
+  .reactor { width: min(70vw, 320px); }
 }
